@@ -15,8 +15,8 @@ git remote add upstream git@github.com:workos/workos-go.git > /dev/null 2>&1
 git fetch upstream main > /dev/null 2>&1
 git switch main > /dev/null 2>&1
 git reset --hard upstream/main > /dev/null 2>&1
-echo "Applying out changes over the top of the new upstream version"
 
+echo "Applying our changes over the top of the new upstream version"
 cp $ORIGINAL_DIR/update.sh $ORIGINAL_DIR/swoop.tmpl .
 rm -rf .github devbox.json devbox.lock makefile
 echo -E "test:" > Makefile && echo "	go vet ./..." >> Makefile && echo "	go test ./..." >> Makefile
@@ -27,16 +27,25 @@ mv README.md README_UPSTREAM.md
 echo "# Swoop version of the WorkOS Go SDK\nTo update this to a newer upstream version, run the \`update.sh\` script\n\n$(cat README_UPSTREAM.md)" > README.md
 rm -rf pkg README_UPSTREAM.md
 sed -E -i '' 's|workos/workos-go/(v[0-9])|cirruscomms/go-workos/\1|g' ./go.mod
-find . -type f -name '*.go'  -exec sed -E -i '' 's|workos/workos-go/(v[0-9])/internal/workos|cirruscomms/go-workos/\1|g;s|workos/workos-go/(v[0-9])/pkg/(.*)|cirruscomms/go-workos/\1/\2|g' {} \;
-grep -R "type Client struct" * | sed -E 's|/[a-z]+\.go:.*||' | grep -v "webhooks" | xargs -I {} bash -c 'WORKOS_PACKAGE=$(echo {}); echo "package ${WORKOS_PACKAGE}$(cat swoop.tmpl)" > {}"/swoop.go";'
-grep -R "type Client struct" * | sed -E 's|:.*||' | grep -v "webhooks" | xargs -I {} sed -i '' "s|type Client struct {
-	TenantID string // the internal tenant id that tells the auth-service which API/client-creds to use when talking to WorkOS
-	TenantID string // the internal tenant id that tells the auth-service which API/client-creds to use when talking to WorkOS|type Client struct {
-	TenantID string // the internal tenant id that tells the auth-service which API/client-creds to use when talking to WorkOS
-	TenantID string // the internal tenant id that tells the auth-service which API/client-creds to use when talking to WorkOS\n\tTenantID string // the internal tenant id that tells the auth-service which API/client-creds to use when talking to WorkOS|g; s|||; s|||; s|||; s|	APIKey string$|	APIKey string // Used as the auth-token when talking to auth-service|" {}
-grep -R "req\.Header\.Set.*User-Agent" * | sed -E 's|:.*||' | grep -v "webhooks" | sort | uniq | xargs -I {} sed -i '' 's|req.Header.Set("User-Agent", "workos-go/"+workos.Version)
-	req.Header.Set("X-Tenant-ID", c.TenantID)|req.Header.Set("User-Agent", "workos-go/"+workos.Version)
-	req.Header.Set("X-Tenant-ID", c.TenantID)\n\treq.Header.Set("X-Tenant-ID", c.TenantID)|g' {}
+
+#
+# This is where the bulk of the changes will need to be made as we expand coverage of the WorkOS API
+#
+
+# Update all the import paths to point to our repo
+find . -type f -name '*.go'  -exec sed -E -i '' 's|workos/workos-go/(v[0-9])/internal/workos|cirruscomms/go-workos/\1|g; s|workos/workos-go/(v[0-9])/pkg/(.*)|cirruscomms/go-workos/\1/\2|g' {} \;
+# Add swoop.go file to each package that has a Client struct, except webhooks
+grep -R -l "type Client struct" * | grep ".go" | sed -E 's|/[a-z]+\.go||' | grep -v "webhooks" | xargs -I {} bash -c 'WORKOS_PACKAGE=$(echo {}); echo "package ${WORKOS_PACKAGE}$(cat swoop.tmpl)" > {}"/swoop.go";'
+# Add TenantID field to each Client struct, except webhooks
+grep -R -l "type Client struct" *  | grep ".go" | grep -v "webhooks" | xargs -I {} sed -i '' "s|type Client struct {|type Client struct {\n\tTenantID string // the internal tenant id that tells the auth-service which API/client-creds to use when talking to WorkOS|g;" {}
+# Add a comment to the APIKey field in each Client struct, except webhooks
+grep -R -l "type Client struct" * | grep ".go" | grep ".go" | grep -v "webhooks" | xargs -I {} sed -i '' "s|	APIKey string$|	APIKey string // Used as the auth-token when talking to auth-service|" {}
+# Add the x-tenant-id header to every request (webhooks doesn't make requests so is excluded)
+grep -R -l "req\.Header\.Set.*User-Agent" *  | grep ".go" | grep -v "webhooks" | sort | uniq | xargs -I {} sed -i '' 's|req.Header.Set("User-Agent", "workos-go/"+workos.Version)|req.Header.Set("User-Agent", "workos-go/"+workos.Version)\n\treq.Header.Set("X-Tenant-ID", c.TenantID)|g' {}
+
+#
+# Back to the boring stuff
+#
 go mod tidy > /dev/null 2>&1
 echo "Finished updating the code base, now running tests"
 make test || exit 1
