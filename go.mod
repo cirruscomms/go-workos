@@ -1,4 +1,4 @@
-module github.com/workos/workos-go/v5
+module github.com/cirruscomms/go-workos/v5
 
 go 1.13
 
