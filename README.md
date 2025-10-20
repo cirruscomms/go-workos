@@ -1,4 +1,4 @@
-# WorkOS Go Library
+# Swoop version of the WorkOS Go SDK\nTo update this to a newer upstream version, run the `update.sh` script\n\n# WorkOS Go Library
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/workos/workos-go/v5.svg)](https://pkg.go.dev/github.com/workos/workos-go/v5)
 
