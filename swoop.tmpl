@@ -13,18 +13,20 @@ import (
 // SwoopClient creates and returns a WorkOS Client with the provided tenant, authToken, and authServiceHost
 // The authServiceHost should be the URL of the Swoop Auth Service
 // Example: https://auth.swoop.com.au
-func SwoopClient(ctx context.Context, tenant, authServiceHost, oAuthAddress, oAuthClientID, oAuthClientSecret string, oAuthScopes []string) (authServiceClient *Client) {
-	httpClient := workos.NewClient(ctx, oAuthAddress, oAuthClientID, oAuthClientSecret, oAuthScopes, 10*time.Second)
-	httpClient.Transport = http.DefaultTransport
+func SwoopClient(ctx context.Context, tenant, authToken, authServiceHost string) (authServiceClient *Client) {
+	httpClient := &http.Client{
+		Timeout:   10 * time.Second,
+		Transport: http.DefaultTransport,
+	}
 
 	go11y.AddDBStoreToHTTPClient(httpClient)
 
 	// Return workos-client with added fields and updated values
 	return &Client{
 		TenantID:   tenant,
+		APIKey:     authToken,
 		Endpoint:   authServiceHost,
 		HTTPClient: httpClient,
 		JSONEncode: json.Marshal,
 	}
 }
-

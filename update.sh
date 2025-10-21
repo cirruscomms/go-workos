@@ -22,7 +22,7 @@ git reset --hard upstream/main > /dev/null 2>&1
 echo "3b. Updated temp copy to match latest upstream version"
 
 echo "4a. Applying our changes over the top of the new upstream version"
-cp $ORIGINAL_DIR/update.sh $ORIGINAL_DIR/swoop.tmpl $ORIGINAL_DIR/go.mod $ORIGINAL_DIR/auth.go .
+cp -rf $ORIGINAL_DIR/update.sh $ORIGINAL_DIR/swoop.tmpl $ORIGINAL_DIR/go.mod $ORIGINAL_DIR/tenants .
 rm -rf .github devbox.json devbox.lock makefile
 echo -E "test:" > Makefile && echo "	go vet ./..." >> Makefile && echo "	go test ./..." >> Makefile
 mv internal/workos/workos.go ./workos.go

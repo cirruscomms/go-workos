@@ -1,8 +1,7 @@
-package usermanagement
+package tenants
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -24,8 +23,7 @@ func SwoopClient(ctx context.Context, tenant, authToken, authServiceHost string)
 	return &Client{
 		TenantID:   tenant,
 		APIKey:     authToken,
-		Endpoint:   authServiceHost,
+		Endpoint:   authServiceHost + "/tenants",
 		HTTPClient: httpClient,
-		JSONEncode: json.Marshal,
 	}
 }
