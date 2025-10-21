@@ -41,13 +41,13 @@ echo "4c. Now applying the Swoop specific changes"
 # Update all the import paths to point to our repo
 find . -type f -name '*.go'  -exec sed -E -i '' 's|workos/workos-go/(v[0-9])/internal/workos|cirruscomms/go-workos/\1|g; s|workos/workos-go/(v[0-9])/pkg/(.*)|cirruscomms/go-workos/\1/\2|g' {} \;
 # Add swoop.go file to each package that has a Client struct, except webhooks
-grep -R -l "type Client struct" * | grep ".go" | sed -E 's|/[a-z]+\.go||' | grep -v "webhooks" | xargs -I {} bash -c 'WORKOS_PACKAGE=$(echo {}); echo "package ${WORKOS_PACKAGE}$(cat swoop.tmpl)" > {}"/swoop.go";'
+grep -R -l "type Client struct" * | grep ".go" | sed -E 's|/[a-z]+\.go||' | grep -vE "(webhooks|tenants)" | xargs -I {} bash -c 'WORKOS_PACKAGE=$(echo {}); echo "package ${WORKOS_PACKAGE}$(cat swoop.tmpl)" > {}"/swoop.go";'
 # Add TenantID field to each Client struct, except webhooks
-grep -R -l "type Client struct" *  | grep ".go" | grep -v "webhooks" | xargs -I {} sed -i '' "s|type Client struct {|type Client struct {\n\tTenantID string // the internal tenant id that tells the auth-service which API/client-creds to use when talking to WorkOS|g;" {}
+grep -R -l "type Client struct" *  | grep ".go" | grep -vE "(webhooks|tenants)" | xargs -I {} sed -i '' "s|type Client struct {|type Client struct {\n\tTenantID string // the internal tenant id that tells the auth-service which API/client-creds to use when talking to WorkOS|g;" {}
 # Add a comment to the APIKey field in each Client struct, except webhooks
-grep -R -l "type Client struct" * | grep ".go" | grep ".go" | grep -v "webhooks" | xargs -I {} sed -i '' "s|	APIKey string$|	APIKey string // Used as the auth-token when talking to auth-service|" {}
+grep -R -l "type Client struct" * | grep ".go" | grep ".go" | grep -vE "(webhooks|tenants)" | xargs -I {} sed -i '' "s|	APIKey string$|	APIKey string // Used as the auth-token when talking to auth-service|" {}
 # Add the x-tenant-id header to every request (webhooks doesn't make requests so is excluded)
-grep -R -l "req\.Header\.Set.*User-Agent" *  | grep ".go" | grep -v "webhooks" | sort | uniq | xargs -I {} sed -i '' 's|req.Header.Set("User-Agent", "workos-go/"+workos.Version)|req.Header.Set("User-Agent", "workos-go/"+workos.Version)\n\treq.Header.Set("X-Tenant-ID", c.TenantID)|g' {}
+grep -R -l "req\.Header\.Set.*User-Agent" *  | grep ".go" | grep -vE "(webhooks|tenants)" | sort | uniq | xargs -I {} sed -i '' 's|req.Header.Set("User-Agent", "workos-go/"+workos.Version)|req.Header.Set("User-Agent", "workos-go/"+workos.Version)\n\treq.Header.Set("X-Tenant-ID", c.TenantID)|g' {}
 
 #
 # Back to the boring stuff
